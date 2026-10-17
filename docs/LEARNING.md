@@ -459,3 +459,61 @@ detective a stronger model). Outputs:
    the questions more than the judge does?
 3. Find a false alarm in `results/raw/`. Was it the suspect, the
    translator, or the rules? (Check the `noise` column first.)
+
+---
+
+## Stage 8 — Web UI (`app/streamlit_app.py`)
+
+### What was built
+
+A browser version of the game with Streamlit:
+
+- **Sidebar**: pick a mystery (any file in `mysteries/`), choose real
+  Claude suspects or offline scripted ones, start a new game, and make
+  your accusation.
+- **Left**: pick a suspect and chat with them. Each suspect keeps their
+  own conversation (their `Suspect` object's memory).
+- **Right — the evidence board**: prime suspects, who the logic accuses,
+  every contradiction with its proof, the physical evidence, and every
+  statement as a Prolog fact. A pop-up appears the moment a new lie is
+  proven.
+
+The page contains no reasoning: it only displays what `Game.board()`
+returns, which comes straight from Prolog.
+
+### Key ideas
+
+- **Streamlit reruns the whole script** on every click. Anything that
+  must survive a rerun (the `Game` object) lives in `st.session_state`.
+- **One Prolog database per process.** Two browser tabs mean two games
+  but one database. `PrologEngine.resets` counts resets; each `Game`
+  remembers the count it loaded at and, if someone else has reset the
+  database since, reloads its scenario and replays its own testimony
+  (`Game.activate`). `test_two_games_do_not_mix_testimony` checks this.
+- **Testing a UI without a browser**: `tests/test_app.py` uses
+  Streamlit's `AppTest` to click the radio button, type a question, and
+  check that the proof appears.
+
+### How to run it
+
+```bash
+.venv/bin/streamlit run app/streamlit_app.py
+```
+
+It opens at http://localhost:8501. Without a key in `.env` the
+"Offline" toggle is forced on. Try: pick **niece**, ask "Where were you
+this evening?", and watch the torn-glove proof appear on the right.
+
+(When the tests finish you may see `WARNING: Failed to stop Prolog
+threads`. That is SWI-Prolog shutting down after Streamlit used it from
+another thread, and it is harmless.)
+
+### Exercises
+
+1. Add a "Hint" button that shows `had_opportunity/1`, `had_means/1` and
+   `had_motive/1` for each suspect as a small table. Which `PrologEngine`
+   methods would you add?
+2. Highlight in red the statements that appear in at least one
+   contradiction.
+3. Add a counter of questions asked, and show a score at accusation
+   time (fewer questions = better).

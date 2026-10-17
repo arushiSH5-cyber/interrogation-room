@@ -48,9 +48,27 @@ class Game:
         self._suspects = suspects
         self._translator = translator
         self._engine = engine or PrologEngine()
-        self._engine.load_scenario(sc.facts(scenario))
         self._reported: set[str] = set()
         self.turns: list[Turn] = []
+        self._loaded_at = -1
+        self.activate()
+
+    def activate(self) -> None:
+        """Make sure the shared Prolog database holds THIS game's facts."""
+        # pyswip has ONE Prolog database per process. If another game (a
+        # second browser tab) or the generator reset it since we loaded,
+        # reload our scenario and replay our testimony.
+        if self._loaded_at == PrologEngine.resets:
+            return
+        self._engine.load_scenario(sc.facts(self.scenario))
+        for turn in self.turns:
+            self._add_testimony(turn.translation.facts)
+        self._loaded_at = PrologEngine.resets
+
+    def _add_testimony(self, facts) -> None:
+        for fact in facts:
+            if not self._engine.ask(fact):        # skip repeats of known testimony
+                self._engine.assert_fact(fact)
 
     @property
     def suspect_names(self) -> list[str]:
@@ -66,9 +84,8 @@ class Game:
                              f"Choose from: {', '.join(self._suspects)}")
         answer = self._suspects[name].ask(question)
         translation = self._translator.translate(name, question, answer)
-        for fact in translation.facts:
-            if not self._engine.ask(fact):        # skip repeats of known testimony
-                self._engine.assert_fact(fact)
+        self.activate()
+        self._add_testimony(translation.facts)
         new = [p for p in self._engine.contradictions()
                if proof_key(p) not in self._reported]
         self._reported.update(proof_key(p) for p in new)
@@ -78,6 +95,7 @@ class Game:
 
     def board(self) -> dict:
         """Everything the evidence board shows, as plain data."""
+        self.activate()
         return {
             "testimony": self._engine.testimony(),
             "evidence": self._engine.evidence(),

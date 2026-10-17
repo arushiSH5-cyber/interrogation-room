@@ -120,6 +120,7 @@ class PrologEngine:
     """Thin object wrapper around the embedded SWI-Prolog database."""
 
     _prolog: Prolog | None = None   # shared by all instances (one process)
+    resets = 0                      # bumped on every reset, so owners can tell
 
     def __init__(self) -> None:
         if PrologEngine._prolog is None:
@@ -148,6 +149,7 @@ class PrologEngine:
 
     def reset(self) -> None:
         """Forget the current scenario and all testimony."""
+        PrologEngine.resets += 1
         for pred in SCENARIO_PREDICATES:
             name, arity = pred.split("/")
             blanks = ", ".join(["_"] * int(arity))

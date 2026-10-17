@@ -35,10 +35,12 @@ def test_contradictions_reported_only_once_and_no_duplicate_facts():
     assert len(game.board()["testimony"]) == 7       # repeats not re-asserted
 
 
-def test_new_game_resets_previous_testimony():
+def test_two_games_do_not_mix_testimony():
     first = new_game(ASHFORD, offline=True)
     first.ask("niece", "Where were you?")
     second = new_game(ASHFORD, offline=True)
+    assert second.board()["testimony"] == []
+    assert len(first.board()["testimony"]) == 2       # first game reloads its facts
     assert second.board()["testimony"] == []
 
 
