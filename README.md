@@ -23,7 +23,8 @@ contradictions live and explains them with a proof.
 - [x] **Stage 6** — LLM mystery generator, verified fair by Prolog (`src/generator.py`, `prolog/verify.pl`)
 - [x] **Stage 7** — evaluation harness: Prolog vs LLM judge vs pure-LLM detective (`src/evaluate.py`)
 - [x] **Stage 8** — Streamlit UI with live evidence board (`app/streamlit_app.py`)
-- [ ] Stage 9 — report
+- [x] **Stage 9** — NeurIPS-style report outline (`docs/REPORT_OUTLINE.md`)
+- [ ] Real-LLM runs: generate 20 mysteries, run the evaluation, fill the `[RUN]` numbers in the outline (needs `ANTHROPIC_API_KEY` in `.env`)
 
 ## Setup
 
@@ -42,26 +43,63 @@ swipl -g run_tests -t halt tests/test_prolog.pl
 
 Step-by-step notes for each stage are in [`docs/LEARNING.md`](docs/LEARNING.md).
 
-## Stage 1: try it
+## Play
+
+```bash
+.venv/bin/python -m src.cli --offline                 # scripted suspects, no API key
+.venv/bin/python -m src.cli                           # Claude suspects (needs .env)
+.venv/bin/streamlit run app/streamlit_app.py          # web UI with live evidence board
+```
+
+To use Claude, create `.env` in the project root (it is gitignored):
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+## Generate mysteries and evaluate
+
+```bash
+.venv/bin/python -m src.generator --count 20          # mysteries/gen_001.json ... (Prolog-verified)
+.venv/bin/python -m src.evaluate --dry-run            # shows how many API calls a run will make
+.venv/bin/python -m src.evaluate                      # results/*.csv + charts
+```
+
+## Prolog on its own
 
 ```bash
 swipl prolog/load.pl
 ```
 
-Then see [`QUERIES.md`](QUERIES.md) for queries to type. Run the tests with:
-
-```bash
-swipl -g run_tests -t halt tests/test_prolog.pl
-```
+Then see [`QUERIES.md`](QUERIES.md) for queries to type.
 
 ## Layout
 
 ```
-prolog/
-  mystery.pl         the scenario: cast, rooms, murder, evidence, testimony (data only)
-  rules.pl           opportunity / means / motive -> prime_suspect
-  contradictions.pl  contradiction/2, explain/3 (proof), proven_liar/1
-  load.pl            loads all three
-tests/
-  test_prolog.pl     plunit tests for the Prolog logic
+prolog/                    LOGIC: all truth and reasoning
+  schema.pl                scenario predicates (dynamic)
+  mystery.pl               reference scenario "Death at Ashford Manor" + answer key
+  rules.pl                 opportunity / means / motive -> prime_suspect
+  contradictions.pl        contradiction/2, explain/3 (proof), proven_liar/1
+  detective.pl             accused/1: who the logic says lied
+  verify.pl                verify_mystery/1: is a mystery fair and solvable?
+  load.pl                  loads everything for interactive use
+src/
+  engine.py                Python <-> Prolog bridge (pyswip), proofs as dicts
+  pipeline.py              FUNCTIONAL: pure parse -> validate -> to_prolog
+  translator.py            Claude structured output -> pipeline
+  agents.py                OOP: Suspect / InnocentSuspect / Culprit / ScriptedSuspect
+  scenario.py              mystery JSON helpers (validate, facts, case file)
+  game.py                  one interrogation: ask -> translate -> assert -> check
+  cli.py                   command-line game
+  offline.py               regex translator for scripted suspects (no API key)
+  generator.py             LLM writes mysteries, verify.pl approves them
+  evaluate.py, charts.py   Prolog vs LLM judge vs pure-LLM detective
+  llm.py                   the only file that calls the Anthropic API
+app/streamlit_app.py       web UI
+mysteries/                 scenarios as JSON
+results/                   evaluation CSVs, charts, raw transcripts
+tests/                     plunit (test_prolog.pl) + pytest
+docs/LEARNING.md           step-by-step notes for every stage
+docs/REPORT_OUTLINE.md     NeurIPS-style report outline
 ```

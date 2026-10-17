@@ -517,3 +517,36 @@ another thread, and it is harmless.)
    contradiction.
 3. Add a counter of questions asked, and show a score at accusation
    time (fewer questions = better).
+
+---
+
+## Stage 9 — Report outline (`docs/REPORT_OUTLINE.md`)
+
+### What was built
+
+A section-by-section outline for the final paper in NeurIPS style:
+abstract, introduction, related work, system design (one subsection per
+paradigm), a **paradigm comparison table**, evaluation, limitations and
+references. Every bullet points at the file in this repo that backs it
+up, so writing the paper is mostly turning bullets into sentences.
+
+Numbers are marked `[RUN]` until the real evaluation has been run. They
+come from `results/summary.csv`, and the figures are the two PNGs in
+`results/`.
+
+### How to use it
+
+1. Put `ANTHROPIC_API_KEY` in `.env`.
+2. `python -m src.generator --count 20`, then `python -m src.evaluate`.
+3. Copy `results/summary.csv` into Table 2, and read a few
+   `results/raw/*.json` files to write the analysis (one Prolog win, one
+   Prolog loss).
+
+### Exercises
+
+1. Write the paradigm-comparison paragraph for *one* row of Table 1 in
+   your own words, with a 3–5 line code excerpt as evidence.
+2. Pick the limitation you think matters most and sketch the Prolog
+   rule that would fix it.
+3. Explain to a classmate, in two sentences, why the LLM judge's
+   reasoning is not a proof but `explain/3`'s output is.
