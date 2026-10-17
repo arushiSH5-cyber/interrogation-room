@@ -1,0 +1,7 @@
+# Python 3.12 (pyswip needs a matching SWI-Prolog: brew install swi-prolog)
+pyswip>=0.3.3
+anthropic>=1.15
+python-dotenv>=1.0
+pytest>=8.0
+matplotlib>=3.9
+streamlit>=1.40

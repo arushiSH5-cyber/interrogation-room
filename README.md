@@ -16,7 +16,7 @@ contradictions live and explains them with a proof.
 ## Progress
 
 - [x] **Stage 1** — hand-written Prolog mystery, rules, contradiction detection with proofs
-- [ ] Stage 2 — Python ↔ Prolog bridge
+- [x] **Stage 2** — Python ↔ Prolog bridge (`src/engine.py`)
 - [ ] Stage 3 — functional translation pipeline
 - [ ] Stage 4 — one suspect agent
 - [ ] Stage 5 — multi-suspect interrogation + live checking
@@ -29,7 +29,18 @@ contradictions live and explains them with a proof.
 
 ```bash
 brew install swi-prolog
+uv venv --python 3.12 .venv
+uv pip install --python .venv -r requirements.txt
 ```
+
+Run every test (Prolog + Python):
+
+```bash
+swipl -g run_tests -t halt tests/test_prolog.pl
+.venv/bin/python -m pytest
+```
+
+Step-by-step notes for each stage are in [`docs/LEARNING.md`](docs/LEARNING.md).
 
 ## Stage 1: try it
 

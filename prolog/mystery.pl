@@ -12,9 +12,9 @@
 %   - location(Person, Room, Hour) means "Person was in Room at Hour".
 % =====================================================================
 
-% Later stages add testimony while the game runs (assertz/1), so these
-% predicates must be dynamic instead of fixed at load time.
-:- dynamic says/2, evidence/2.
+% schema.pl declares every scenario predicate dynamic, so later stages
+% can add testimony while the game runs (assertz/1) or swap mysteries.
+:- ensure_loaded(schema).
 
 % --- The cast ---------------------------------------------------------
 person(lord_ashford).
@@ -56,3 +56,28 @@ says(maid,     location(niece, library, 21)).       % saw her go in
 says(gardener, location(gardener, garden, 21)).
 says(niece,    location(niece, garden, 21)).        % LIE
 says(niece,    location(niece, kitchen, 20)).       % LIE
+
+% --- Answer key ---------------------------------------------------------
+% What REALLY happened. The game logic (rules.pl, contradictions.pl)
+% never reads these facts; only verify.pl does, to check that the
+% mystery is fair and has exactly one solution (Stage 6).
+culprit(niece).
+
+% true_location(Person, Room, Hour)
+true_location(butler,   kitchen, 20).
+true_location(butler,   kitchen, 21).
+true_location(maid,     kitchen, 20).
+true_location(maid,     kitchen, 21).
+true_location(gardener, garden,  20).
+true_location(gardener, garden,  21).
+true_location(niece,    study,   20).    % fetching the candlestick
+true_location(niece,    library, 21).    % the murder
+true_location(lord_ashford, library, 20).
+true_location(lord_ashford, library, 21).
+
+% saw(Witness, Person, Room, Hour): things a witness noticed.
+saw(maid, niece, library, 21).           % from the hallway
+
+% cover_story(Culprit, Room, Hour): the lie the culprit will tell.
+cover_story(niece, kitchen, 20).
+cover_story(niece, garden,  21).
