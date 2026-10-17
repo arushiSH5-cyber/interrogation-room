@@ -11,14 +11,14 @@ contradictions live and explains them with a proof.
 | --- | --- |
 | Logic | `prolog/` — all truth and reasoning (facts, rules, unification, backtracking) |
 | Functional | `src/pipeline.py` — pure statement → fact pipeline |
-| Object-oriented | `src/agents.py` — `Suspect` objects with private state *(Stage 4)* |
+| Object-oriented | `src/agents.py` — `Suspect` objects with private state |
 
 ## Progress
 
 - [x] **Stage 1** — hand-written Prolog mystery, rules, contradiction detection with proofs
 - [x] **Stage 2** — Python ↔ Prolog bridge (`src/engine.py`)
 - [x] **Stage 3** — Claude translator + pure functional pipeline (`src/translator.py`, `src/pipeline.py`)
-- [ ] Stage 4 — one suspect agent
+- [x] **Stage 4** — `Suspect` agents with private state + JSON scenarios (`src/agents.py`, `src/scenario.py`)
 - [ ] Stage 5 — multi-suspect interrogation + live checking
 - [ ] Stage 6 — mystery generator
 - [ ] Stage 7 — evaluation

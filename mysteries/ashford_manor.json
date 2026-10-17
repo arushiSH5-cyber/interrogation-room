@@ -1,0 +1,46 @@
+{
+  "title": "Death at Ashford Manor",
+  "setting": "A rainy autumn evening at Ashford Manor, an old English country house. Lord Ashford was found dead in the library, struck with a candlestick from the study.",
+  "victim": "lord_ashford",
+  "hours": [20, 21],
+  "rooms": ["library", "kitchen", "garden", "study"],
+  "murder": {"room": "library", "hour": 21, "weapon": "candlestick", "weapon_room": "study"},
+  "suspects": [
+    {"name": "butler", "role": "the butler, Mr. Graves", "personality": "formal, proud, slightly bitter",
+     "motive": "unpaid_wages", "secret": "Lord Ashford had not paid him for three months and he was planning to resign.",
+     "relationships": [{"person": "maid", "feeling": "fatherly towards her"}, {"person": "niece", "feeling": "distrusts her"}]},
+    {"name": "maid", "role": "the maid, Polly", "personality": "nervous, chatty, observant",
+     "motive": null, "secret": "She has been reading the family's letters while dusting.",
+     "relationships": [{"person": "butler", "feeling": "respects him"}, {"person": "niece", "feeling": "a little afraid of her"}]},
+    {"name": "gardener", "role": "the gardener, Tom", "personality": "gruff, short answers, honest",
+     "motive": null, "secret": "He sells the estate's roses in the village on the side.",
+     "relationships": [{"person": "lord_ashford", "feeling": "liked the old man"}]},
+    {"name": "niece", "role": "Lord Ashford's niece, Celia", "personality": "charming, confident, quick-witted",
+     "motive": "inheritance", "secret": "She is deeply in debt and inherits the estate.",
+     "relationships": [{"person": "lord_ashford", "feeling": "resented his control over her money"}]}
+  ],
+  "culprit": "niece",
+  "timeline": [
+    {"person": "butler", "room": "kitchen", "hour": 20},
+    {"person": "butler", "room": "kitchen", "hour": 21},
+    {"person": "maid", "room": "kitchen", "hour": 20},
+    {"person": "maid", "room": "kitchen", "hour": 21},
+    {"person": "gardener", "room": "garden", "hour": 20},
+    {"person": "gardener", "room": "garden", "hour": 21},
+    {"person": "niece", "room": "study", "hour": 20},
+    {"person": "niece", "room": "library", "hour": 21},
+    {"person": "lord_ashford", "room": "library", "hour": 20},
+    {"person": "lord_ashford", "room": "library", "hour": 21}
+  ],
+  "sightings": [
+    {"witness": "maid", "person": "niece", "room": "library", "hour": 21}
+  ],
+  "cover_story": [
+    {"room": "kitchen", "hour": 20},
+    {"room": "garden", "hour": 21}
+  ],
+  "evidence": [
+    {"item": "torn_glove", "description": "A torn evening glove belonging to the niece, found in the study next to the empty candlestick stand. The fire there was lit at 20:00.",
+     "person": "niece", "room": "study", "hour": 20}
+  ]
+}

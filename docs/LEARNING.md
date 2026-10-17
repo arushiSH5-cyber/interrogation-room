@@ -153,3 +153,84 @@ stand-in client.
    using only comprehensions or `functools.reduce`.
 3. Change `translate` so a fact about the speaker comes before facts
    about other people. Which test would you add?
+
+---
+
+## Stage 4 — Suspect agents (`src/agents.py`, `src/scenario.py`)
+
+### What was built
+
+- **Scenarios as JSON.** `mysteries/ashford_manor.json` is the Stage 1
+  mystery in a form Python (and later an LLM) can read and write. Besides
+  the case file it holds the *answer key*: the true `timeline`, extra
+  `sightings` (the maid saw the niece go into the library), and the
+  culprit's `cover_story`. `src/scenario.py` has pure helpers:
+  `validate` (shape and names), `facts` (JSON → Prolog strings),
+  `observations` (what a character saw), and `case_file` (what the
+  detective is told).
+- **Suspects as objects.** Each suspect is an object with **private
+  state** — real whereabouts, what they saw, their secret, their
+  relationships, and the conversation so far (`_memory`). The only way in
+  is the public interface: `ask(question)`, `name`, `role`, and
+  `transcript` (a *copy*, so callers cannot rewrite history).
+
+### Key code walk-through
+
+```python
+class Suspect:
+    def ask(self, question):
+        self._memory.append({"role": "user", "content": question})
+        answer = self._reply()                       # <- hook
+        self._memory.append({"role": "assistant", "content": answer})
+        return answer
+
+class InnocentSuspect(Suspect):
+    def _role_instructions(self): return "...Always tell the truth about where you were..."
+
+class Culprit(Suspect):
+    def _role_instructions(self): return "...You ARE the murderer... claim you were: <cover story>"
+
+class ScriptedSuspect(Suspect):
+    def _reply(self): return "At 20:00 I was in the kitchen. ..."   # no LLM
+```
+
+- **Encapsulation**: state lives in `_attributes`; read-only properties
+  expose only what a detective may know.
+- **Inheritance**: `ask`, memory and prompt building are written once in
+  `Suspect`.
+- **Polymorphism**: the game calls `suspect.ask(q)` without knowing which
+  subclass it holds. The culprit lies, the innocents do not, and the
+  scripted suspect skips the LLM, all through the same call.
+- **Memory**: every call to the LLM sends the whole conversation, so the
+  suspect can stay consistent with (or slip up against) what they said
+  before.
+- **Factory**: `build_suspects(scenario, llm, scripted=False)` picks the
+  right class for each character.
+
+### How to run it
+
+```bash
+.venv/bin/python -m pytest tests/test_agents.py tests/test_scenario.py -v
+```
+
+With an API key in `.env` you can talk to one suspect directly:
+
+```python
+from src import scenario as sc
+from src.agents import build_suspects
+from src.llm import ClaudeLLM
+s = sc.load("mysteries/ashford_manor.json")
+niece = build_suspects(s, ClaudeLLM())["niece"]
+print(niece.ask("Where were you at nine o'clock?"))
+print(niece.persona_prompt())        # see exactly what the model was told
+```
+
+### Exercises
+
+1. Add a `NervousInnocent` subclass that tells the truth but sometimes
+   gets the hour wrong by one. What does the Prolog checker do with it?
+   (This is a source of false alarms in Stage 7.)
+2. Add a read-only property `questions_asked` that counts questions
+   without exposing `_memory`.
+3. Why does `transcript` return copies of the dicts and not the list
+   itself? Write the test that would fail if it returned `self._memory`.
