@@ -44,3 +44,15 @@ test(self_contradiction,
     memberchk(verdict(self_contradiction(gardener)), Proof).
 
 :- end_tests(contradictions).
+
+:- begin_tests(detective).
+
+% The maid/niece tie is broken by prime_suspect/1, and the glove proves
+% the niece lied, so the niece (and only the niece) is accused.
+test(accuses_only_the_niece) :-
+    accused_list([niece]).
+
+test(honest_maid_not_accused, [fail]) :-
+    accused(maid).
+
+:- end_tests(detective).

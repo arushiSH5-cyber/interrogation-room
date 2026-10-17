@@ -19,7 +19,7 @@ contradictions live and explains them with a proof.
 - [x] **Stage 2** — Python ↔ Prolog bridge (`src/engine.py`)
 - [x] **Stage 3** — Claude translator + pure functional pipeline (`src/translator.py`, `src/pipeline.py`)
 - [x] **Stage 4** — `Suspect` agents with private state + JSON scenarios (`src/agents.py`, `src/scenario.py`)
-- [ ] Stage 5 — multi-suspect interrogation + live checking
+- [x] **Stage 5** — multi-suspect interrogation CLI with live checking + offline mode (`src/game.py`, `src/cli.py`)
 - [ ] Stage 6 — mystery generator
 - [ ] Stage 7 — evaluation
 - [ ] Stage 8 — Streamlit UI

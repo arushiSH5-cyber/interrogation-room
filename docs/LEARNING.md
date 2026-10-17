@@ -234,3 +234,78 @@ print(niece.persona_prompt())        # see exactly what the model was told
    without exposing `_memory`.
 3. Why does `transcript` return copies of the dicts and not the list
    itself? Write the test that would fail if it returned `self._memory`.
+
+---
+
+## Stage 5 — Live multi-suspect interrogation (`src/game.py`, `src/cli.py`)
+
+### What was built
+
+The first playable game. You question any suspect; after **every**
+answer the game runs the full loop and prints any lie it can now prove:
+
+```
+suspect.ask(q)  ->  translator.translate  ->  engine.assert_fact  ->  engine.contradictions
+   (OOP)              (LLM + functional)          (Prolog)               (Prolog)
+```
+
+New pieces:
+
+- **`Game`** (`src/game.py`) coordinates one interrogation. It remembers
+  which contradictions it has already shown (`proof_key`) so each is
+  reported once, and skips testimony Prolog already knows so repeats do
+  not create duplicate proofs.
+- **`prolog/detective.pl`** adds `accused/1`: the logic accuses someone
+  if evidence contradicts them, if they contradict themselves, or if they
+  are in a two-witness tie *and* are a prime suspect (the tie-breaker).
+- **Offline mode** (`src/offline.py`): `ScriptedSuspect` answers with
+  fixed sentences and `PatternTranslator` reads them with regular
+  expressions, so you can play and test without an API key. Its output
+  still goes through the same pure pipeline.
+- **CLI** (`src/cli.py`): a simple command loop.
+
+### How to run it
+
+Offline (works now, no key):
+
+```bash
+.venv/bin/python -m src.cli --offline
+```
+
+```
+> maid: where were you?
+maid: At 20:00 I was in the kitchen. At 21:00 I was in the kitchen. ... At 21:00 I saw niece in the library.
+  + fact: maid in the kitchen at 20:00
+  ...
+> niece: and you?
+  !! CONTRADICTION FOUND
+     1. evidence (torn_glove): niece was in the study at 20:00
+     2. niece said: niece was in the kitchen at 20:00
+     3. rule broken: one_place_at_a_time(niece, 20, study, kitchen)
+     4. verdict: evidence cannot lie, so niece lied
+> board
+> accuse niece
+Correct! The murderer was niece.
+```
+
+With real Claude suspects (needs `ANTHROPIC_API_KEY` in `.env`):
+
+```bash
+.venv/bin/python -m src.cli
+```
+
+Ask naturally, e.g. `niece: where were you around eight?`. Expect the
+niece to give her cover story, and a proof to appear as soon as her
+story clashes with the glove or with the maid's sighting. Each question
+costs two API calls (the suspect's answer and the translation).
+
+Tests: `.venv/bin/python -m pytest tests/test_game.py -v`.
+
+### Exercises
+
+1. Add a `undo` command that retracts the facts from the last turn.
+   Which `PrologEngine` method do you need?
+2. In `prolog/detective.pl`, what happens if two innocent witnesses
+   disagree and neither is a prime suspect? Write a plunit test for it.
+3. Add a `who <room> <hour>` command that lists everyone placed in that
+   room at that hour (reuse your Stage 2 exercise).

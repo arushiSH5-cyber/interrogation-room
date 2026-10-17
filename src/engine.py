@@ -20,7 +20,7 @@ from pyswip import Atom, Functor, Prolog, Variable
 PROLOG_DIR = Path(__file__).resolve().parent.parent / "prolog"
 
 # Reasoning files, loaded once. They hold no scenario data.
-LOGIC_FILES = ("schema.pl", "rules.pl", "contradictions.pl")
+LOGIC_FILES = ("schema.pl", "rules.pl", "contradictions.pl", "detective.pl")
 
 # Every scenario predicate (see prolog/schema.pl) as name/arity.
 # reset() wipes all of them before a new mystery is loaded.
@@ -110,7 +110,7 @@ def describe_proof(p: dict) -> list[str]:
     return [
         f"1. {describe_claim(p['claim_a'])}",
         f"2. {describe_claim(p['claim_b'])}",
-        f"3. rule broken: {p['rule']}{tuple(p['rule_args'])}",
+        f"3. rule broken: {p['rule']}({', '.join(map(str, p['rule_args']))})",
         f"4. verdict: {verdicts.get(v['type'], v['type'])}",
     ]
 
@@ -184,6 +184,10 @@ class PrologEngine:
 
     def proven_liars(self) -> list[str]:
         return sorted(set(self.findall("S", "proven_liar(S)")))
+
+    def accused(self) -> list[str]:
+        """Who the logic accuses of lying (prolog/detective.pl)."""
+        return self.findall("L", "accused_list(L)")[0]
 
     def testimony(self) -> list[dict]:
         """Every says/2 fact as {'speaker', 'person', 'room', 'hour'}."""
