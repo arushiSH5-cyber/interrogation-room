@@ -21,7 +21,7 @@ contradictions live and explains them with a proof.
 - [x] **Stage 4** — `Suspect` agents with private state + JSON scenarios (`src/agents.py`, `src/scenario.py`)
 - [x] **Stage 5** — multi-suspect interrogation CLI with live checking + offline mode (`src/game.py`, `src/cli.py`)
 - [x] **Stage 6** — LLM mystery generator, verified fair by Prolog (`src/generator.py`, `prolog/verify.pl`)
-- [ ] Stage 7 — evaluation
+- [x] **Stage 7** — evaluation harness: Prolog vs LLM judge vs pure-LLM detective (`src/evaluate.py`)
 - [ ] Stage 8 — Streamlit UI
 - [ ] Stage 9 — report
 

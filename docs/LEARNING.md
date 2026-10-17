@@ -385,3 +385,77 @@ every saved file whenever you run pytest.
    Does `verify.pl` need to change? (It should not; explain why.)
 3. Look at `attempts_used` after a generation run. Which problems did the
    LLM make most often? What does that tell you about LLMs and rules?
+
+---
+
+## Stage 7 — Evaluation (`src/evaluate.py`, `src/charts.py`)
+
+### What was built
+
+An experiment that answers the project's research question: **does a
+logic checker catch the lying suspect more reliably than an LLM?** For
+every mystery in `mysteries/` it compares three detectors:
+
+| Detector | What it sees | How it decides |
+| --- | --- | --- |
+| (a) Prolog checker | a fixed interrogation, translated to facts | `accused_list/1` in `prolog/detective.pl` |
+| (b) LLM judge | the same transcript + the case file | Claude names the liars and the murderer |
+| (c) Pure-LLM detective | only the case file | Claude plans its own ≤6 questions, hears the answers, decides; no Prolog |
+
+The fixed interrogation asks every suspect two questions ("where were you
+at each hour…", "who did you see…"). (a) and (b) score the *same*
+transcript, so any difference comes from the reasoning, not the data.
+
+**Ground truth.** Only the culprit is told to lie, so the culprit is the
+one liar. Metrics:
+
+- *lie detection rate*: share of mysteries where the culprit was flagged
+  (with a 95% Wilson confidence interval, because 20 runs is small);
+- *false-alarm rate*: innocents flagged ÷ all innocents;
+- *exact*: flagged set is exactly `{culprit}`;
+- *culprit accuracy*: the murderer was named correctly;
+- *noise*: facts recorded for innocents that are not actually true.
+  These come from the LLM suspect misspeaking or the translator
+  misreading, and explain false alarms that are not the checker's fault.
+
+Every mystery's full record (both transcripts, verdicts, proofs) is saved
+to `results/raw/<mystery>.json`, so a crashed run resumes where it
+stopped and the report can quote real examples.
+
+### Key code walk-through
+
+The run is impure (API calls), but the scoring is pure and tested:
+
+```python
+def score(verdict, scenario) -> dict:          # one detector, one mystery
+def summarize(rows) -> list[dict]:             # one row per detector
+def wilson(successes, n) -> (low, high):       # confidence interval
+```
+
+`tests/test_evaluate.py` runs a complete evaluation offline with a fake
+LLM that answers according to the requested schema.
+
+### How to run it
+
+```bash
+.venv/bin/python -m src.evaluate --dry-run     # prints mysteries + max API calls, spends nothing
+.venv/bin/python -m src.evaluate               # needs ANTHROPIC_API_KEY in .env
+```
+
+Expect about `4 × suspects + 9` calls per mystery (≈ 25–30), all on
+`claude-haiku-5-5` by default (`--judge-model` lets you give the judge and
+detective a stronger model). Outputs:
+
+- `results/eval_runs.csv` — one row per (mystery, detector)
+- `results/summary.csv` — the headline numbers
+- `results/detection_vs_false_alarms.png`, `results/culprit_accuracy.png`
+
+### Exercises
+
+1. Add a fourth detector: the LLM judge **given the Prolog proofs** as
+   extra input. Does logic + LLM beat either alone?
+2. Change the fixed interrogation to one question per suspect. How do
+   the detection rates move, and why does the Prolog checker depend on
+   the questions more than the judge does?
+3. Find a false alarm in `results/raw/`. Was it the suspect, the
+   translator, or the rules? (Check the `noise` column first.)
