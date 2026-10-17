@@ -309,3 +309,79 @@ Tests: `.venv/bin/python -m pytest tests/test_game.py -v`.
    disagree and neither is a prime suspect? Write a plunit test for it.
 3. Add a `who <room> <hour>` command that lists everyone placed in that
    room at that hour (reuse your Stage 2 exercise).
+
+---
+
+## Stage 6 — Mystery generator checked by Prolog (`src/generator.py`, `prolog/verify.pl`)
+
+### What was built
+
+Claude writes brand-new mysteries as JSON; **Prolog decides whether each
+one is fair** before anyone plays it. If not, the problems Prolog found
+are sent back to Claude and it tries again (up to 4 attempts).
+
+```
+LLM writes JSON -> scenario.validate (shape, names, hours) -> verify.pl (logic)
+      ^                                                          |
+      +---------------- problems fed back, try again ------------+
+```
+
+`prolog/verify.pl` reads the hidden answer key and lists problems as
+plain Prolog terms, one `problem/1` clause per rule, for example:
+
+```prolog
+problem(culprit_not_at_scene(C)) :-
+    culprit(C), murder(_, R, H), \+ true_location(C, R, H).
+problem(innocent_accused(S)) :-
+    simulated(accused_list(L)), member(S, L), \+ culprit(S).
+```
+
+The interesting one is `simulated/1`. It asks "what if a perfect
+detective questioned everyone?": it asserts what every innocent would
+truthfully say plus the culprit's cover story, runs the **same detective
+rules the game uses** (`prime_suspects/1`, `accused_list/1`), and then
+retracts the pretend testimony. `setup_call_cleanup/3` guarantees the
+cleanup runs even if the goal fails. So "exactly one solution" is checked
+by the logic itself, not by Python.
+
+The logic files stay scenario-independent: `prolog/mystery.pl` is still
+the hand-written reference scenario (now with its answer key), and
+`mysteries/ashford_manor.json` is the same mystery in JSON form.
+
+### How to run it
+
+Tests (offline, a fake LLM returns canned mysteries):
+
+```bash
+swipl -g run_tests -t halt tests/test_prolog.pl     # includes the verify unit
+.venv/bin/python -m pytest tests/test_generator.py -v
+```
+
+In Prolog you can ask directly:
+
+```prolog
+?- verify_mystery(P).                 % P = []  (Ashford is fair)
+?- retract(evidence(_, torn_glove)), verify_mystery(P).
+% P = [culprit_not_caught(niece), not_exactly_one_prime_suspect([])]
+```
+
+Generating real mysteries needs an API key in `.env`:
+
+```bash
+.venv/bin/python -m src.generator --count 20
+```
+
+This uses the cheaper bulk model (`claude-haiku-5-5`) and makes about
+20–40 calls (one per attempt). Each success is saved as
+`mysteries/gen_NNN.json`, and `test_every_saved_mystery_is_fair` re-checks
+every saved file whenever you run pytest.
+
+### Exercises
+
+1. Add `problem(weapon_room_is_murder_room)` for mysteries where the
+   weapon is kept in the murder room (too easy). Test it in plunit.
+2. Add a new kind of contradiction to `contradictions.pl`, for example
+   "nobody can be somewhere after the victim's body was found there".
+   Does `verify.pl` need to change? (It should not; explain why.)
+3. Look at `attempts_used` after a generation run. Which problems did the
+   LLM make most often? What does that tell you about LLMs and rules?

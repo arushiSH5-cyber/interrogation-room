@@ -56,3 +56,31 @@ test(honest_maid_not_accused, [fail]) :-
     accused(maid).
 
 :- end_tests(detective).
+
+:- begin_tests(verify).
+
+test(reference_mystery_is_fair) :-
+    verify_mystery([]).
+
+test(false_evidence_is_caught,
+     [ setup(assertz(user:evidence(location(butler, study, 20), muddy_boot))),
+       cleanup(retract(user:evidence(location(butler, study, 20), muddy_boot))) ]) :-
+    verify_mystery(Problems),
+    memberchk(false_evidence(muddy_boot), Problems).
+
+% Without the torn glove nothing places the niece near the weapon, so
+% the logic cannot single her out: the mystery is unsolvable.
+test(unsolvable_without_glove,
+     [ setup(retract(user:evidence(location(niece, study, 20), torn_glove))),
+       cleanup(assertz(user:evidence(location(niece, study, 20), torn_glove))) ]) :-
+    verify_mystery(Problems),
+    memberchk(not_exactly_one_prime_suspect([]), Problems).
+
+% Simulation must leave the real testimony exactly as it was.
+test(simulation_cleans_up) :-
+    findall(S-F, says(S, F), Before),
+    verify_mystery(_),
+    findall(S-F, says(S, F), After),
+    Before == After.
+
+:- end_tests(verify).

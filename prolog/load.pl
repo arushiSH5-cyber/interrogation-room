@@ -4,3 +4,4 @@
 :- ensure_loaded(rules).
 :- ensure_loaded(contradictions).
 :- ensure_loaded(detective).
+:- ensure_loaded(verify).

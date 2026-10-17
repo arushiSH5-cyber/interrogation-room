@@ -75,7 +75,7 @@ def validate(s: dict) -> list[str]:
             + [f"murder/weapon room '{r}' unknown"
                for r in (m["room"], m["weapon_room"]) if r not in rooms]
             + [f"bad motive for {p['name']}" for p in s["suspects"]
-               if p.get("motive") is not None and not _is_atom(p["motive"])]
+               if p.get("motive") and not _is_atom(p["motive"])]   # "" / None = no motive
             + [f"timeline entry {e} uses unknown names or hour"
                for e in s["timeline"]
                if e["person"] not in people or e["room"] not in rooms or not _is_hour(e["hour"])]
