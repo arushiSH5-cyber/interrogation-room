@@ -57,6 +57,22 @@ To use Claude, create `.env` in the project root (it is gitignored):
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+### Model and cost
+
+Everything uses **Claude Haiku 5.5** by default ($0.10 per million input tokens,
+$0.50 per million output tokens). One answer is two API calls (the suspect's reply
+and its translation into facts), so a whole game costs well under a cent, and
+generating 20 mysteries plus the full evaluation (about 550 calls) is under a dollar.
+
+For stronger role-play in a live demo, put a bigger model in `.env`:
+
+```
+IR_MODEL=claude-sonnet-5-5
+```
+
+`--model` on the CLI does the same for one run. Network, key and rate-limit problems
+show a short message instead of crashing the game.
+
 ## Generate mysteries and evaluate
 
 ```bash

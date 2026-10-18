@@ -13,9 +13,11 @@ import json
 import os
 from typing import Protocol
 
-# Main model (suspects, generator) and a cheaper one for bulk runs
-# (evaluation). Both can be overridden from .env.
-DEFAULT_MODEL = "claude-opus-5-5"
+# Haiku 5.5 is the default everywhere: at $0.10 / $0.50 per million
+# input / output tokens a whole game costs well under a cent. For a demo
+# with stronger role-play, set IR_MODEL=claude-sonnet-5-5 (20x the price)
+# or claude-opus-5-5 (40x) in .env, or pass --model.
+DEFAULT_MODEL = "claude-haiku-5-5"
 BULK_MODEL = "claude-haiku-5-5"
 
 # Models that accept the server-side refusal fallback ("default" mode).
@@ -61,6 +63,9 @@ class ClaudeLLM:
                  max_tokens: int = 4000, client=None) -> None:
         import anthropic
 
+        from dotenv import load_dotenv
+
+        load_dotenv()          # before reading IR_MODEL, so .env can set it
         self.model = model or os.environ.get("IR_MODEL", DEFAULT_MODEL)
         self.effort = effort
         self.max_tokens = max_tokens
@@ -80,9 +85,27 @@ class ClaudeLLM:
             # one), let the API retry on its recommended fallback model.
             extra = {"extra_headers": {"anthropic-beta": "server-side-fallback-2026-07-01"},
                      "extra_body": {"fallbacks": "default"}}
-        response = self._client.messages.create(
-            model=self.model, max_tokens=self.max_tokens, system=system,
-            messages=messages, output_config=output_config, **extra)
+        import anthropic
+
+        # Turn network / account problems into LLMError, which the CLI, the
+        # web app and the evaluation already catch, instead of a traceback
+        # in the middle of a game. (The SDK has already retried twice.)
+        try:
+            response = self._client.messages.create(
+                model=self.model, max_tokens=self.max_tokens, system=system,
+                messages=messages, output_config=output_config, **extra)
+        except anthropic.AuthenticationError:
+            raise LLMError("The API key was rejected. Check ANTHROPIC_API_KEY in .env.")
+        except anthropic.PermissionDeniedError:
+            raise LLMError("This API key can't use that model, or the account has no credit.")
+        except anthropic.NotFoundError:
+            raise LLMError(f"Unknown model '{self.model}'. Check IR_MODEL / --model.")
+        except anthropic.RateLimitError:
+            raise LLMError("Rate limited by the API. Wait a minute and try again.")
+        except anthropic.APIConnectionError:
+            raise LLMError("Could not reach the API. Check your internet connection.")
+        except anthropic.APIStatusError as err:
+            raise LLMError(f"The API returned an error ({err.status_code}). Try again.")
         self.calls += 1
         self.input_tokens += response.usage.input_tokens
         self.output_tokens += response.usage.output_tokens

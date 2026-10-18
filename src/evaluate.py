@@ -288,6 +288,8 @@ def main() -> None:
             f"{d}={record['verdicts'][d]['liars']}" for d in DETECTORS)
             + f" (culprit {record['culprit']})")
 
+    if not rows:
+        raise SystemExit("No mystery could be evaluated (see the errors above).")
     summary = summarize(rows)
     write_csv(RESULTS / "eval_runs.csv", rows)
     write_csv(RESULTS / "summary.csv", summary)

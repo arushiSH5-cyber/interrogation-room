@@ -51,3 +51,37 @@ def test_missing_key_gives_helpful_error(monkeypatch):
     monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **k: None)  # ignore a real .env
     with pytest.raises(LLMError, match=".env"):
         ClaudeLLM()
+
+
+class FailingMessages:
+    def __init__(self, error):
+        self.error = error
+
+    def create(self, **kwargs):
+        raise self.error
+
+
+@pytest.mark.parametrize("error_class, message", [
+    ("APIConnectionError", "internet"),
+    ("AuthenticationError", "API key"),
+    ("RateLimitError", "Rate limited"),
+])
+def test_api_errors_become_friendly_llm_errors(error_class, message):
+    import anthropic
+    cls = getattr(anthropic, error_class)
+    error = cls.__new__(cls)          # skip the SDK constructor (needs a real HTTP request)
+    llm = ClaudeLLM(model="claude-haiku-5-5", client=SimpleNamespace(messages=FailingMessages(error)))
+    with pytest.raises(LLMError, match=message):
+        llm.chat("s", [])
+
+
+def test_model_can_be_set_in_env(monkeypatch):
+    monkeypatch.setenv("IR_MODEL", "claude-sonnet-5-5")
+    llm = ClaudeLLM(client=SimpleNamespace(messages=StubMessages("ok")))
+    assert llm.model == "claude-sonnet-5-5"
+
+
+def test_default_model_is_haiku(monkeypatch):
+    monkeypatch.delenv("IR_MODEL", raising=False)
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **k: None)
+    assert ClaudeLLM(client=SimpleNamespace(messages=StubMessages("ok"))).model == "claude-haiku-5-5"
