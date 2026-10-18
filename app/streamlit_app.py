@@ -112,10 +112,10 @@ with board_col:
             st.markdown("  \n".join(steps[:3]))      # two spaces + \n = line break
 
     st.markdown("**Physical evidence**")
-    st.dataframe(board["evidence"], hide_index=True, use_container_width=True)
+    st.dataframe(board["evidence"], hide_index=True, width="stretch")
     st.markdown("**Statements (as Prolog facts)**")
     if board["testimony"]:
-        st.dataframe(board["testimony"], hide_index=True, use_container_width=True)
+        st.dataframe(board["testimony"], hide_index=True, width="stretch")
     else:
         st.caption("Nothing recorded yet.")
     if game.turns and game.turns[-1].translation.rejected:

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import Protocol
 
 # Haiku 5.5 is the default everywhere: at $0.10 / $0.50 per million
@@ -19,6 +20,10 @@ from typing import Protocol
 # or claude-opus-5-5 (40x) in .env, or pass --model.
 DEFAULT_MODEL = "claude-haiku-5-5"
 BULK_MODEL = "claude-haiku-5-5"
+
+# Only the project's own .env. Without a path, python-dotenv searches parent
+# folders and can pick up an unrelated ~/.env.
+ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
 # Models that accept the server-side refusal fallback ("default" mode).
 _FALLBACK_MODELS = ("claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-1")
@@ -44,7 +49,7 @@ def load_api_key() -> str:
     """Read ANTHROPIC_API_KEY from the environment or a .env file."""
     from dotenv import load_dotenv
 
-    load_dotenv()
+    load_dotenv(ENV_FILE)
     key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not key:
         raise LLMError(
@@ -65,7 +70,7 @@ class ClaudeLLM:
 
         from dotenv import load_dotenv
 
-        load_dotenv()          # before reading IR_MODEL, so .env can set it
+        load_dotenv(ENV_FILE)          # before reading IR_MODEL, so .env can set it
         self.model = model or os.environ.get("IR_MODEL", DEFAULT_MODEL)
         self.effort = effort
         self.max_tokens = max_tokens
