@@ -16,9 +16,9 @@ from typing import NamedTuple
 from . import scenario as sc
 from .agents import Suspect, build_suspects
 from .engine import PrologEngine
-from .llm import LLM
+from .llm import LLM, LLMError
 from .offline import PatternTranslator
-from .pipeline import Translation
+from .pipeline import Rejected, Translation
 from .translator import Translator
 
 
@@ -83,7 +83,12 @@ class Game:
             raise ValueError(f"No suspect called '{name}'. "
                              f"Choose from: {', '.join(self._suspects)}")
         answer = self._suspects[name].ask(question)
-        translation = self._translator.translate(name, question, answer)
+        try:
+            translation = self._translator.translate(name, question, answer)
+        except LLMError as err:
+            # The suspect already answered (and remembers it), so keep the
+            # turn; it just adds no facts. Shown under "Ignored" in the UI.
+            translation = Translation((), (), (Rejected(answer, f"could not translate: {err}"),))
         self.activate()
         self._add_testimony(translation.facts)
         new = [p for p in self._engine.contradictions()
@@ -127,5 +132,6 @@ def new_game(scenario: dict, llm: LLM | None = None, offline: bool = False,
                     PatternTranslator(world))
     if llm is None:
         raise ValueError("An LLM is required unless offline=True.")
-    translator = Translator(translator_llm or llm, world, tuple(scenario["hours"]))
+    translator = Translator(translator_llm or llm, world, tuple(scenario["hours"]),
+                            sc.people(scenario))
     return Game(scenario, build_suspects(scenario, llm), translator)
