@@ -23,6 +23,9 @@ Rules:
 - Convert times to the hour of the evening: "around nine" -> 21,
   "9:30 pm" -> 21. "All evening" means every hour in {hours}.
 - Use only these names. People: {persons}. Rooms: {rooms}.
+- Suspects often call each other by first name or title. Map them to
+  these names:
+{people}
 - If nothing qualifies, return an empty list.
 """
 
@@ -54,16 +57,22 @@ def fact_schema(world: pipeline.World) -> dict:
 class Translator:
     """Calls an LLM (injected) and runs its output through the pipeline."""
 
-    def __init__(self, llm: LLM, world: pipeline.World, hours: tuple[int, ...]):
+    def __init__(self, llm: LLM, world: pipeline.World, hours: tuple[int, ...],
+                 people: dict[str, str] | None = None):
+        """people maps each name to who it is, e.g. {"niece": "Lord
+        Ashford's niece, Celia"}, so "Celia" in an answer becomes niece."""
         self._llm = llm
         self._world = world
         self._hours = hours
+        self._people = people or {}
 
     def system_prompt(self, speaker: str) -> str:
         return SYSTEM_PROMPT.format(
             speaker=speaker, hours=list(self._hours),
             persons=", ".join(sorted(self._world.persons)),
-            rooms=", ".join(sorted(self._world.rooms)))
+            rooms=", ".join(sorted(self._world.rooms)),
+            people="\n".join(f"  {name} = {who}" for name, who in sorted(self._people.items()))
+                   or "  (no other names)")
 
     def translate(self, speaker: str, question: str, answer: str) -> pipeline.Translation:
         message = f"Detective asked {speaker}: {question}\n{speaker} answered: {answer}"

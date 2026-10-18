@@ -23,3 +23,12 @@ def test_schema_restricts_names_to_the_world():
     item = fact_schema(WORLD)["properties"]["facts"]["items"]["properties"]
     assert item["person"]["enum"] == ["maid", "niece"]
     assert item["room"]["enum"] == ["kitchen", "library"]
+
+
+def test_prompt_maps_character_names_to_atoms():
+    llm = FakeLLM(json_replies=[{"facts": []}])
+    people = {"niece": "Lord Ashford's niece, Celia", "maid": "the maid, Polly"}
+    Translator(llm, WORLD, (20, 21), people).translate("maid", "Who did you see?", "I saw Celia.")
+    system = llm.calls[0][1]
+    assert "niece = Lord Ashford's niece, Celia" in system
+    assert "maid = the maid, Polly" in system

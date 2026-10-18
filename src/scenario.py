@@ -35,6 +35,11 @@ def world(s: dict) -> World:
                  rooms=frozenset(s["rooms"]))
 
 
+def people(s: dict) -> dict[str, str]:
+    """Each person's atom -> how the story describes them (for the translator)."""
+    return {**{p["name"]: p["role"] for p in s["suspects"]}, s["victim"]: "the victim"}
+
+
 def profile(s: dict, name: str) -> dict:
     return next(p for p in s["suspects"] if p["name"] == name)
 
